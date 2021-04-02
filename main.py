@@ -33,6 +33,7 @@ parser.add_argument('-fq1', metavar='str', type=str, help='Specify unmapped fast
 parser.add_argument('-fq2', metavar='str', type=str, help='Specify unmapped fastq file, read-2 of read pairs.')
 parser.add_argument('-ONT_bamin', help='Optional. Specify if you use BAM file with ONT long reads.', action='store_true')
 parser.add_argument('-ONT_bam', help='Optional. Specify BAM file with ONT long reads. This must be position-sorted.')
+parser.add_argument('-ONT_recon_min_depth', metavar='int', type=int, help='Optional. Specify a number (interger) of minimum reads required for local HHV-6 sequence reconstruction.')
 parser.add_argument('-vref', metavar='str', type=str, help='Required. Specify reference of virus genomes, including HHV-6A and B. Example: viral_genomic_200405.fa')
 parser.add_argument('-vrefindex', metavar='str', type=str, help='Required. Specify hisat2 index of virus genomes, including HHV-6A and B. Example: viral_genomic_200405')
 parser.add_argument('-depth', metavar='int', type=int, help='Optional. Average depth of input BAM/CRAM file. Only available when using WGS data. If this option is true, will output virus_read_depth/chromosome_depth as well.')

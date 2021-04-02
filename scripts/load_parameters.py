@@ -22,6 +22,12 @@ class load:
             self.reconst_minimum_depth=1
             if args.ONT_bamin is True:
                 self.reconst_minimum_depth=5
+                if args.ONT_recon_min_depth is not None:
+                    if isinstance(args.ONT_recon_min_depth, int) is False:
+                        log.logger.error('No integer was specified with -ONT_recon_min_depth flag.')
+                        exit(1)
+                    self.reconst_minimum_depth= int(args.ONT_recon_min_depth)
+                    log.logger.info('%s was specified with -ONT_recon_min_depth flag. It will use %s.' % (args.ONT_recon_min_depth, args.ONT_recon_min_depth))
                 self.ont_hhv6_ratio_threshold=2
             self.gzip_compresslevel=1
             self.metaspades_kmer='21,33,55'
