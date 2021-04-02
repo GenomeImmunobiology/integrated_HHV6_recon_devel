@@ -1,3 +1,11 @@
+# about this repo
+This repo is under development.
+Please also visit the original repo: https://github.com/shohei-kojima/integrated_HHV6_recon
+
+
+------------
+
+
 # Welcome to the integrated_HHV6_recon page!
 
 Details is available in [Wiki page](https://github.com/shohei-kojima/integrated_HHV6_recon/wiki).
