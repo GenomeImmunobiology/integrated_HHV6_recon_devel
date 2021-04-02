@@ -107,7 +107,8 @@ def identify_high_cov_virus_from_bedgraph(args, params, filenames):
                 high_cov_judge='False'
             outfile.write('%s\tvirus_exist=%s\tgenome_length=%d;mapped_length=%d;perc_genome_mapped=%f;average_depth=%f;average_depth_of_mapped_region=%f;ratio_ave_virus_depth_to_autosome_depth=%s\tfasta_header=%s\n' % (prev_id, high_cov_judge, total_len, cov_len, 100 * genome_covered, ave_depth, ave_depth_norm, ratio_ave_virus_depth_to_autosome_depth, virus_names[prev_id]))
         if len(high_cov) >= 1:
-            log.logger.info('high_cov_virus=%s' % ';'.join([ l[0] for l in high_cov ]))
+            if args.ONT_bamin is False:
+                log.logger.info('high_cov_virus=%s' % ';'.join([ l[0] for l in high_cov ]))
         global hhv6a_highcov
         global hhv6b_highcov
         high_cov_set=set([ l[0] for l in high_cov ])
@@ -118,8 +119,10 @@ def identify_high_cov_virus_from_bedgraph(args, params, filenames):
         if len(for_plot_d) >= 1:
             if args.alignmentin is True:
                 sample_name=os.path.basename(args.b) if not args.b is None else os.path.basename(args.c)
-            else:
+            elif args.fastqin is True:
                 sample_name=os.path.basename(args.fq1)
+            elif args.ONT_bamin is True:
+                sample_name=args.ONT_bam
             if len(for_plot_d) > 20:
                 for_plot_cov=[ l[1] for l in sorted(for_plot_cov, reverse=True)[:20] ]
                 for_plot_cov=set(for_plot_cov)
@@ -153,3 +156,55 @@ def identify_high_cov_virus_from_bedgraph(args, params, filenames):
     except:
         log.logger.error('\n'+ traceback.format_exc())
         exit(1)
+
+
+def judge_AB(args, params, filenames, hhv6a_highcov_orig, hhv6b_highcov_orig):
+    log.logger.debug('started.')
+    try:
+        a_ave_depth=None
+        b_ave_depth=None
+        global hhv6a_highcov,hhv6b_highcov
+        hhv6a_highcov=False
+        hhv6b_highcov=False
+        with open(filenames.summary) as infile:
+            for line in infile:
+                ls=line.split()
+                if ls[0] == 'NC_001664.4':
+                    for info in ls[2].split(';'):
+                        if 'average_depth=' in info:
+                            a_ave_depth=float(info.replace('average_depth=', ''))
+                            break
+                if ls[0] == 'NC_000898.1':
+                    for info in ls[2].split(';'):
+                        if 'average_depth=' in info:
+                            b_ave_depth=float(info.replace('average_depth=', ''))
+                            break
+        if a_ave_depth is None:
+            log.logger.error('Summary file does not contain NC_001664.4.')
+            exit(1)
+        if b_ave_depth is None:
+            log.logger.error('Summary file does not contain NC_000898.1.')
+            exit(1)
+        if a_ave_depth / b_ave_depth > params.ont_hhv6_ratio_threshold:
+            hhv6a_highcov=True
+            hhv6b_highcov=False
+            log.logger.info('high_cov_virus=NC_001664.4')
+        elif b_ave_depth / a_ave_depth > params.ont_hhv6_ratio_threshold:
+            hhv6a_highcov=False
+            hhv6b_highcov=True
+            log.logger.info('high_cov_virus=NC_000898.1')
+        else:
+            hhv6a_highcov=hhv6a_highcov_orig
+            hhv6b_highcov=hhv6b_highcov_orig
+            if hhv6a_highcov_orig is True and hhv6b_highcov is True:
+                log.logger.info('high_cov_virus=NC_001664.4;NC_000898.1')
+            elif hhv6a_highcov_orig is True:
+                log.logger.info('high_cov_virus=NC_001664.4')
+            elif hhv6b_highcov is True:
+                log.logger.info('high_cov_virus=NC_000898.1')
+            else:
+                log.logger.info('high_cov_virus=None')
+    except:
+        log.logger.error('\n'+ traceback.format_exc())
+        exit(1)
+

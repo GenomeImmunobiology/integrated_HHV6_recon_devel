@@ -11,7 +11,7 @@ import os,sys,datetime,argparse,glob,logging
 
 
 # version
-version='2020/12/02'
+version='2021/April/02'
 
 
 # HHV-6 refseq IDs
@@ -31,6 +31,8 @@ parser.add_argument('-fastqin', help='Optional. Specify if you use unmapped read
 parser.add_argument('-single', help='Optional. Specify if you use single-end unmapped reads for input instead of BAM/CRAM file. Only works when specifing -fastqin option. You also need to specify -fq1.', action='store_true')
 parser.add_argument('-fq1', metavar='str', type=str, help='Specify unmapped fastq file, read-1 of read pairs.')
 parser.add_argument('-fq2', metavar='str', type=str, help='Specify unmapped fastq file, read-2 of read pairs.')
+parser.add_argument('-ONT_bamin', help='Optional. Specify if you use BAM file with ONT long reads.', action='store_true')
+parser.add_argument('-ONT_bam', help='Optional. Specify BAM file with ONT long reads. This must be position-sorted.')
 parser.add_argument('-vref', metavar='str', type=str, help='Required. Specify reference of virus genomes, including HHV-6A and B. Example: viral_genomic_200405.fa')
 parser.add_argument('-vrefindex', metavar='str', type=str, help='Required. Specify hisat2 index of virus genomes, including HHV-6A and B. Example: viral_genomic_200405')
 parser.add_argument('-depth', metavar='int', type=int, help='Optional. Average depth of input BAM/CRAM file. Only available when using WGS data. If this option is true, will output virus_read_depth/chromosome_depth as well.')
@@ -135,27 +137,32 @@ filenames.hhv6b_dr_norm_vcf_gz=os.path.join(args.outdir, 'hhv6b_DR_norm.vcf.gz')
 filenames.hhv6b_dr_gatk_naive =os.path.join(args.outdir, 'hhv6b_DR_reconstructed.fa')
 
 
-# 0. Unmapped read retrieval
-if args.alignmentin is True:
-    import retrieve_unmapped
-    log.logger.info('Unmapped read retrieval started.')
-    retrieve_unmapped.retrieve_unmapped_reads(args, params, filenames)
-elif args.fastqin is True:
-    log.logger.info('Unmapped read retrieval skipped. Read1=%s, read2=%s.' % (args.fq1, args.fq2))
-    if args.single is False:
-        filenames.unmapped_merged_1=args.fq1
-        filenames.unmapped_merged_2=args.fq2
-    else:
-        filenames.unmapped_merged_1=args.fq1
+if args.ONT_bamin is False:
+    # 0. Unmapped read retrieval
+    if args.alignmentin is True:
+        import retrieve_unmapped
+        log.logger.info('Unmapped read retrieval started.')
+        retrieve_unmapped.retrieve_unmapped_reads(args, params, filenames)
+    elif args.fastqin is True:
+        log.logger.info('Unmapped read retrieval skipped. Read1=%s, read2=%s.' % (args.fq1, args.fq2))
+        if args.single is False:
+            filenames.unmapped_merged_1=args.fq1
+            filenames.unmapped_merged_2=args.fq2
+        else:
+            filenames.unmapped_merged_1=args.fq1
 
-# 1. mapping
-import mapping
-log.logger.info('Mapping of unmapped reads started.')
-mapping.map_to_viruses(args, params, filenames)
-if args.alignmentin is True:
-    utils.gzip_or_del(args, params, filenames.unmapped_merged_1)
-    utils.gzip_or_del(args, params, filenames.unmapped_merged_2)
-if mapping.read_mapped is True:
+    # 1. mapping
+    import mapping
+    log.logger.info('Mapping of unmapped reads started.')
+    mapping.map_to_viruses(args, params, filenames)
+    if args.alignmentin is True:
+        utils.gzip_or_del(args, params, filenames.unmapped_merged_1)
+        utils.gzip_or_del(args, params, filenames.unmapped_merged_2)
+
+if (args.ONT_bamin is False and mapping.read_mapped is True) or args.ONT_bamin is True:
+    if args.ONT_bamin is True:
+        import mapping
+        filenames.mapped_to_virus_bam=args.ONT_bam
     log.logger.info('BAM to bedgraph conversion started.')
     mapping.bam_to_bedgraph(args, params, filenames)
     
@@ -166,24 +173,33 @@ if mapping.read_mapped is True:
     
     # 3. reconstruct HHV-6
     import reconstruct_hhv6,reconstruct_hhv6_dr
+    if args.ONT_bamin is True:
+        identify_high_cov.judge_AB(args, params, filenames, identify_high_cov.hhv6a_highcov, identify_high_cov.hhv6b_highcov)
     if identify_high_cov.hhv6a_highcov is True:
         log.logger.info('HHV-6A full sequence reconstruction started.')
         reconstruct_hhv6.reconst_a(args, params, filenames, hhv6a_refid)
-        log.logger.info('HHV-6A DR sequence reconstruction started.')
-        reconstruct_hhv6_dr.map_to_dr(args, params, filenames, hhv6a_refid)
-        reconstruct_hhv6_dr.output_summary(args, params, filenames)
-        reconstruct_hhv6_dr.reconst_a(args, params, filenames, hhv6a_refid)
+        if args.ONT_bamin is True:
+            log.logger.info('ONT_bamin was specified. DR reconstruction skipped.')
+        else:
+            log.logger.info('HHV-6A DR sequence reconstruction started.')
+            reconstruct_hhv6_dr.map_to_dr(args, params, filenames, hhv6a_refid)
+            reconstruct_hhv6_dr.output_summary(args, params, filenames)
+            reconstruct_hhv6_dr.reconst_a(args, params, filenames, hhv6a_refid)
     if identify_high_cov.hhv6b_highcov is True:
         log.logger.info('HHV-6B full sequence reconstruction started.')
         reconstruct_hhv6.reconst_b(args, params, filenames, hhv6b_refid)
-        log.logger.info('HHV-6B DR sequence reconstruction started.')
-        reconstruct_hhv6_dr.map_to_dr(args, params, filenames, hhv6b_refid)
-        reconstruct_hhv6_dr.output_summary(args, params, filenames)
-        reconstruct_hhv6_dr.reconst_b(args, params, filenames, hhv6b_refid)
+        if args.ONT_bamin is True:
+            log.logger.info('ONT_bamin was specified. DR reconstruction skipped.')
+        else:
+            log.logger.info('HHV-6B DR sequence reconstruction started.')
+            reconstruct_hhv6_dr.map_to_dr(args, params, filenames, hhv6b_refid)
+            reconstruct_hhv6_dr.output_summary(args, params, filenames)
+            reconstruct_hhv6_dr.reconst_b(args, params, filenames, hhv6b_refid)
     if args.keep is False:
-        os.remove(filenames.mapped_to_virus_bai)
-        if os.path.exists(filenames.mapped_to_dr_bai) is True:
-            os.remove(filenames.mapped_to_dr_bai)
+        if args.ONT_bamin is False:
+            os.remove(filenames.mapped_to_virus_bai)
+            if os.path.exists(filenames.mapped_to_dr_bai) is True:
+                os.remove(filenames.mapped_to_dr_bai)
 else:
     log.logger.info('No read was mapped.')
 

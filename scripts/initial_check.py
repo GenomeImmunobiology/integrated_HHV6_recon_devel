@@ -111,11 +111,11 @@ def check(args, argv, base):
             elif os.path.exists(args.fa) is False:
                 log.logger.error('Reference genome (%s) was not found.' % args.fa)
                 exit(1)
-        if args.alignmentin is False and args.fastqin is False:
-            log.logger.error('Please specify either -alignmentin or -fastqin.')
+        if args.alignmentin is False and args.fastqin is False and args.ONT_bamin is False:
+            log.logger.error('Please specify either -alignmentin or -fastqin or -ONT_bamin.')
             exit(1)
-        elif args.alignmentin is True and args.fastqin is True:
-            log.logger.error('Please specify either -alignmentin or -fastqin.')
+        elif (args.alignmentin is True and args.fastqin is True) or (args.alignmentin is True and args.ONT_bamin is True) or (args.ONT_bamin is True and args.fastqin is True):
+            log.logger.error('Please specify either -alignmentin or -fastqin or -ONT_bamin.')
             exit(1)
         elif args.alignmentin is True:
             if args.c is not None:
@@ -145,6 +145,17 @@ def check(args, argv, base):
                     exit(1)
             if args.all_discordant is True:
                 log.logger.info('"-all_discordant" option is only available when "-alignmentin" option was specified. Will ignore this and proceed anyway.')
+        elif args.ONT_bamin is True:
+            import pysam
+            if args.ONT_bam is None:
+                log.logger.error('Please specify BAM file.')
+                exit(1)
+            if os.path.exists(args.ONT_bam) is False:
+                log.logger.error('BAM file (%s) was not found.' % args.ONT_bam)
+                exit(1)
+            if os.path.exists(args.ONT_bam + '.bai') is False:
+                log.logger.warning('BAM index was not found. Making...')
+                pysam.index('-@' % args.p, args.ONT_bam)
 
     except SystemExit:
         log.logger.debug('\n'+ traceback.format_exc())

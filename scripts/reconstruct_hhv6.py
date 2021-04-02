@@ -61,8 +61,10 @@ def reconst_a(args, params, filenames, refseqid):
             thread_n=args.p - 1
         if args.alignmentin is True:
             sample_name=os.path.basename(args.b) if not args.b is None else os.path.basename(args.c)
-        else:
+        elif args.fastqin is True:
             sample_name=os.path.basename(args.fq1)
+        elif args.ONT_bamin is True:
+            sample_name=args.ONT_bam
         pysam.view(filenames.mapped_to_virus_bam, '-h', '-o', filenames.tmp_bam, refseqid, catch_stdout=False)
         _,seq=utils.retrieve_only_one_virus_fasta(args.vref, refseqid)
         with open(filenames.tmp_fa, 'w') as outfile:
@@ -159,8 +161,10 @@ def reconst_b(args, params, filenames, refseqid):
             thread_n=args.p - 1
         if args.alignmentin is True:
             sample_name=os.path.basename(args.b) if not args.b is None else os.path.basename(args.c)
-        else:
+        elif args.fastqin is True:
             sample_name=os.path.basename(args.fq1)
+        elif args.ONT_bamin is True:
+            sample_name=args.ONT_bam
         pysam.view(filenames.mapped_to_virus_bam, '-h', '-o', filenames.tmp_bam, refseqid, catch_stdout=False)
         _,seq=utils.retrieve_only_one_virus_fasta(args.vref, refseqid)
         with open(filenames.tmp_fa, 'w') as outfile:

@@ -20,6 +20,9 @@ class load:
             self.min_seq_len=20
             self.bedgraph_bin=1
             self.reconst_minimum_depth=1
+            if args.ONT_bamin is True:
+                self.reconst_minimum_depth=5
+                self.ont_hhv6_ratio_threshold=2
             self.gzip_compresslevel=1
             self.metaspades_kmer='21,33,55'
             self.metaspades_memory=4
