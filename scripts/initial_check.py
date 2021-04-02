@@ -155,7 +155,7 @@ def check(args, argv, base):
                 exit(1)
             if os.path.exists(args.ONT_bam + '.bai') is False:
                 log.logger.warning('BAM index was not found. Making...')
-                pysam.index('-@' % args.p, args.ONT_bam)
+                pysam.index('-@ %d' % args.p, args.ONT_bam)
 
     except SystemExit:
         log.logger.debug('\n'+ traceback.format_exc())
