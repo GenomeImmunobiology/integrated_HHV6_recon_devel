@@ -117,7 +117,6 @@ def remove_chrs_no_read(args, params, filenames, hhv6a_refid, hhv6b_refid):
                         read.next_reference_id=name_to_id[read.next_reference_name]
                     outfile.write(read)
         cmd='samtools view -h %s | samtools view -bh -o %s -' % (filenames.tmp_bam, filenames.mapped_to_virus_bam)
-        pysam.index(filenames.mapped_to_virus_bam)
         log.logger.debug('samtools command = "'+ cmd +'"')
         out=subprocess.run(cmd, shell=True, stderr=subprocess.PIPE)
         log.logger.debug('\n'+ '\n'.join([ l.decode() for l in out.stderr.splitlines() ]))
@@ -125,7 +124,8 @@ def remove_chrs_no_read(args, params, filenames, hhv6a_refid, hhv6b_refid):
             log.logger.error('\n'+ traceback.format_exc())
             log.logger.error('Error occurred during samtools.')
             exit(1)
-        
+        pysam.index(filenames.mapped_to_virus_bam)
+
     except:
         log.logger.error('\n'+ traceback.format_exc())
         exit(1)
