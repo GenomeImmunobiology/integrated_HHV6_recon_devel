@@ -46,6 +46,7 @@ parser.add_argument('-keep', help='Optional. Specify if you do not want to delet
 parser.add_argument('-p', metavar='int', type=int, help='Optional. Number of threads. 3 or more is recommended. Default: 2', default=2)
 parser.add_argument('-v', '--version', help='Print version.', action='store_true')
 parser.add_argument('-singularity', action='store_true', help=argparse.SUPPRESS)
+parser.add_argument('-remove_chr_with_no_read', action='store_true', help=argparse.SUPPRESS)
 args=parser.parse_args()
 
 
@@ -164,6 +165,9 @@ if (args.ONT_bamin is False and mapping.read_mapped is True) or args.ONT_bamin i
     if args.ONT_bamin is True:
         import mapping
         filenames.mapped_to_virus_bam=args.ONT_bam
+    if args.remove_chr_with_no_read is True:
+        log.logger.info('Removing chrs without reads.')
+        mapping.remove_chrs_no_read(args, params, filenames, hhv6a_refid, hhv6b_refid)
     log.logger.info('BAM to bedgraph conversion started.')
     mapping.bam_to_bedgraph(args, params, filenames)
     

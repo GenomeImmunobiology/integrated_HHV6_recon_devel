@@ -82,3 +82,41 @@ def bam_to_bedgraph(args, params, filenames):
         log.logger.error('\n'+ traceback.format_exc())
         exit(1)
 
+
+def remove_chrs_no_read(args, params, filenames, hhv6a_refid, hhv6b_refid):
+    log.logger.debug('started.')
+    try:
+        import pysam, shutil
+        chr_keep=set()
+        with pysam.AlignmentFile(filenames.mapped_to_virus_bam) as infile:
+            header=infile.header.as_dict()
+            for read in infile:
+                chr_keep.add(read.reference_name)
+                chr_keep.add(read.next_reference_name)
+        chr_keep.add(hhv6a_refid)
+        chr_keep.add(hhv6b_refid)
+        new_header={}
+        name_to_id={}
+        n=0
+        for key in header:
+            if key == 'SQ':
+                new_header['SQ']=[]
+                for sq in header['SQ']:
+                    if sq['SN'] in chr_keep:
+                        new_header['SQ'].append(sq)
+                        name_to_id[sq['SN']]=n
+                        n += 1
+                continue
+            else:
+                new_header[key]=header[key]
+        
+        with pysam.AlignmentFile(filenames.mapped_to_virus_bam) as infile:
+            with pysam.AlignmentFile(filenames.tmp_bam, 'wb', header=new_header) as outfile:
+                for read in infile:
+                    read.reference_id=name_to_id[read.reference_name]
+                    read.next_reference_id=name_to_id[read.next_reference_name]
+                    outfile.write(read)
+        shutil.move(filenames.tmp_bam, filenames.mapped_to_virus_bam)
+    except:
+        log.logger.error('\n'+ traceback.format_exc())
+        exit(1)
