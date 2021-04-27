@@ -106,15 +106,15 @@ def remove_chrs_no_read(args, params, filenames, hhv6a_refid, hhv6b_refid):
                         new_header['SQ'].append(sq)
                         name_to_id[sq['SN']]=n
                         n += 1
-                continue
             else:
                 new_header[key]=header[key]
         
         with pysam.AlignmentFile(filenames.mapped_to_virus_bam) as infile:
             with pysam.AlignmentFile(filenames.tmp_bam, 'wb', header=new_header) as outfile:
                 for read in infile:
-                    read.reference_id=name_to_id[read.reference_name]
-                    read.next_reference_id=name_to_id[read.next_reference_name]
+                    if read.reference_name in name_to_id:
+                        read.reference_id=name_to_id[read.reference_name]
+                        read.next_reference_id=name_to_id[read.next_reference_name]
                     outfile.write(read)
         shutil.move(filenames.tmp_bam, filenames.mapped_to_virus_bam)
     except:
